@@ -11,3 +11,9 @@ Install Unidiff by going into the folder directory and run these commands.
   npm start
 ```
     
+## Tech Stack
+
+**Client:** React, Ant Design
+
+**Server:** Firebase
+
