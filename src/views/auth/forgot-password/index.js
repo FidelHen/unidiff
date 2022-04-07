@@ -13,7 +13,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 
-const SignIn = () => {
+const ForgotPassword = () => {
   return (
     <Box
       style={{ minHeight: "calc(100vh - 78px)" }}
@@ -22,9 +22,9 @@ const SignIn = () => {
       <Flex minH={"80vh"} align={"center"} justify={"center"}>
         <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
           <Stack align={"center"}>
-            <Heading fontSize={"4xl"}>Welcome back 🏠</Heading>
+            <Heading fontSize={"4xl"}>Forgot your password?</Heading>
             <Text fontSize={"lg"} color={"gray.600"}>
-              Glad you’re back, please enter your details below
+              No worries, we can email you a reset link
             </Text>
           </Stack>
           <Box
@@ -38,15 +38,6 @@ const SignIn = () => {
                 <FormLabel>Email address</FormLabel>
                 <Input type="email" />
               </FormControl>
-              <FormControl id="password">
-                <FormLabel>Password</FormLabel>
-                <Input type="password" />
-              </FormControl>
-              <Stack spacing={10}>
-                <Link href="/auth/forgot-password" color={"green.400"}>
-                  Forgot password?
-                </Link>
-              </Stack>
               <Stack spacing={5}>
                 <Button
                   bg={"green.400"}
@@ -55,12 +46,11 @@ const SignIn = () => {
                     bg: "green.500",
                   }}
                 >
-                  Sign in
+                  Request reset link
                 </Button>
                 <Text color={"gray.600"} align={"center"}>
-                  Don't have an account?{" "}
-                  <Link color={"green.400"} href="/auth/sign-up">
-                    Sign up for free!
+                  <Link color={"green.400"} href="/auth/sign-in">
+                    Sign in
                   </Link>
                 </Text>
               </Stack>
@@ -72,4 +62,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default ForgotPassword;
