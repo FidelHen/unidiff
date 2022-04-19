@@ -8,7 +8,7 @@ const AuthLayout = () => {
   return (
     <Box bg={useColorModeValue("gray.50", "gray.800")}>
       <Box maxW="100%" display={"flex"} justifyContent={"center"}>
-        <Box maxW="5xl" flexGrow={1} pt={1} pb={1}>
+        <Box maxW="6xl" flexGrow={1} pt={1} pb={1}>
           <Flex
             bg={useColorModeValue("gray.50", "gray.800")}
             color={useColorModeValue("gray.600", "white")}

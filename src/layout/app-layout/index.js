@@ -37,7 +37,7 @@ const AppLayout = () => {
         display={"flex"}
         justifyContent={"center"}
       >
-        <Box maxW="5xl" flexGrow={1} pt={1} pb={1}>
+        <Box maxW="6xl" flexGrow={1} pt={1} pb={1}>
           <Flex
             bg={useColorModeValue("white", "gray.800")}
             color={useColorModeValue("gray.600", "white")}
