@@ -23,9 +23,16 @@ import {
 import collegeData from "../../data/college-data/index";
 import { HamburgerIcon, CloseIcon, Search2Icon } from "@chakra-ui/icons";
 import unidiffLogo from "../../assets/png/unidiff_logo.png";
+import { auth } from "../../utils/firebase";
 
-const AppLayout = () => {
+const AppLayout = ({ isAuthenticated }) => {
   const { isOpen, onToggle } = useDisclosure();
+  let navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    navigate("/", { replace: true });
+  };
 
   return (
     <Box>
@@ -90,36 +97,59 @@ const AppLayout = () => {
               </Flex>
             </Flex>
 
-            <Stack
-              flex={{ base: 1, md: 0 }}
-              justify={"flex-end"}
-              direction={"row"}
-              spacing={6}
-            >
-              <Button
-                as={"a"}
-                fontSize={"sm"}
-                fontWeight={400}
-                variant={"link"}
-                href={"/auth/sign-in"}
+            {!isAuthenticated ? (
+              <Stack
+                flex={{ base: 1, md: 0 }}
+                justify={"flex-end"}
+                direction={"row"}
+                spacing={6}
               >
-                Sign in
-              </Button>
-              <Link to="/auth/sign-up">
+                <Button
+                  as={"a"}
+                  fontSize={"sm"}
+                  fontWeight={400}
+                  variant={"link"}
+                  href={"/auth/sign-in"}
+                >
+                  Sign in
+                </Button>
+                <Link href="/auth/sign-up">
+                  <Button
+                    display={{ base: "none", md: "inline-flex" }}
+                    fontSize={"sm"}
+                    fontWeight={600}
+                    color={"white"}
+                    bg={"green.400"}
+                    _hover={{
+                      bg: "green.500",
+                    }}
+                  >
+                    Join now
+                  </Button>
+                </Link>
+              </Stack>
+            ) : (
+              <Stack
+                flex={{ base: 1, md: 0 }}
+                justify={"flex-end"}
+                direction={"row"}
+                spacing={6}
+              >
                 <Button
                   display={{ base: "none", md: "inline-flex" }}
                   fontSize={"sm"}
                   fontWeight={600}
                   color={"white"}
-                  bg={"green.400"}
+                  bg={"red.400"}
                   _hover={{
-                    bg: "green.500",
+                    bg: "red.500",
                   }}
+                  onClick={handleLogout}
                 >
-                  Join now
+                  Logout
                 </Button>
-              </Link>
-            </Stack>
+              </Stack>
+            )}
           </Flex>
 
           <Collapse in={isOpen} animateOpacity>

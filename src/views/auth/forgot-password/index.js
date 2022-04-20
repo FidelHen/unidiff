@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../../../utils/firebase";
+import { Field, Form, Formik } from "formik";
 import {
   Flex,
   Box,
@@ -10,10 +14,19 @@ import {
   Button,
   Heading,
   Text,
+  useToast,
   useColorModeValue,
 } from "@chakra-ui/react";
 
-const ForgotPassword = () => {
+const ForgotPassword = ({ isAuthenticated }) => {
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  });
   return (
     <Box
       style={{ minHeight: "calc(100vh - 78px)" }}
@@ -33,28 +46,70 @@ const ForgotPassword = () => {
             boxShadow={"lg"}
             p={8}
           >
-            <Stack spacing={4}>
-              <FormControl id="email">
-                <FormLabel>Email address</FormLabel>
-                <Input type="email" />
-              </FormControl>
-              <Stack spacing={5}>
-                <Button
-                  bg={"green.400"}
-                  color={"white"}
-                  _hover={{
-                    bg: "green.500",
-                  }}
-                >
-                  Request reset link
-                </Button>
-                <Text color={"gray.600"} align={"center"}>
-                  <Link color={"green.400"} href="/auth/sign-in">
-                    Sign in
-                  </Link>
-                </Text>
-              </Stack>
-            </Stack>
+            <Formik
+              initialValues={{
+                email: "",
+              }}
+              onSubmit={(values, actions) => {
+                sendPasswordResetEmail(auth, values.email)
+                  .then(() => {
+                    actions.setSubmitting(false);
+                    navigate("/auth/sign-in", { replace: true });
+                    toast({
+                      title: "Success",
+                      description: "Password reset email sent",
+                      status: "success",
+                      duration: 5000,
+                      isClosable: true,
+                      position: "top-right",
+                    });
+                  })
+                  .catch(() => {
+                    actions.setSubmitting(false);
+                    toast({
+                      title: "Error",
+                      description: "Password reset email failed",
+                      status: "error",
+                      duration: 9000,
+                      isClosable: true,
+                    });
+                  });
+              }}
+            >
+              {(props) => (
+                <Form>
+                  <Stack spacing={4}>
+                    <Field name="email">
+                      {({ field }) => (
+                        <FormControl isRequired>
+                          <FormLabel htmlFor="email">Email address</FormLabel>
+                          <Input {...field} type="email" name="email" />
+                        </FormControl>
+                      )}
+                    </Field>
+                    <Stack spacing={5}>
+                      <Button
+                        loadingText="Sending reset email..."
+                        bg={"green.400"}
+                        color={"white"}
+                        _hover={{
+                          bg: "green.500",
+                        }}
+                        isLoading={props.isSubmitting}
+                        type="submit"
+                      >
+                        Request reset link
+                      </Button>
+                      <Text color={"gray.600"} align={"center"}>
+                        <Link color={"green.400"} href="/auth/sign-in">
+                          Sign in
+                        </Link>
+                      </Text>
+                    </Stack>
+                  </Stack>
+                </Form>
+              )}
+            </Formik>
           </Box>
         </Stack>
       </Flex>
