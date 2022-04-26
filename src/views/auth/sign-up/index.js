@@ -18,9 +18,10 @@ import {
 import { useState, useEffect } from "react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { Field, Form, Formik } from "formik";
-import { auth } from "../../../utils/firebase";
+import { auth, db } from "../../../utils/firebase";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 const SignUp = ({ isAuthenticated }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -68,9 +69,26 @@ const SignUp = ({ isAuthenticated }) => {
                   values.password
                 )
                   .then(async (userCredentials) => {
-                    await userCredentials.user.updateProfile({
-                      displayName: "Frank S. Andrew",
+                    // Update user profile
+                    await updateProfile(userCredentials.user, {
+                      displayName: `${values.firstName} ${values.lastName}`,
+                      photoURL: `https://ui-avatars.com/api/?name=${values.firstName}+${values.lastName}&background=random`,
                     });
+
+                    // Create firestore document for user
+                    const userDocRef = doc(
+                      db,
+                      "users",
+                      userCredentials.user.uid
+                    );
+                    await setDoc(userDocRef, {
+                      firstName: values.firstName,
+                      lastName: values.lastName,
+                      email: values.email,
+                      photoURL: `https://ui-avatars.com/api/?name=${values.firstName}+${values.lastName}&background=random`,
+                      account_created: serverTimestamp(),
+                    });
+
                     actions.setSubmitting(false);
                     navigate("/", { replace: true });
                     toast({
@@ -83,6 +101,7 @@ const SignUp = ({ isAuthenticated }) => {
                     });
                   })
                   .catch((error) => {
+                    console.log(error);
                     actions.setSubmitting(false);
                     toast({
                       title: "Error",

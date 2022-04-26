@@ -18,7 +18,6 @@ function App() {
   useEffect(() => {
     auth.onAuthStateChanged((user) => {
       if (user) {
-        console.log(user);
         console.log("user logged in");
         setIsAuthenticated(true);
       } else {

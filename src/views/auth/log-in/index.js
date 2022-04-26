@@ -54,8 +54,7 @@ const SignIn = ({ isAuthenticated }) => {
               }}
               onSubmit={(values, actions) => {
                 signInWithEmailAndPassword(auth, values.email, values.password)
-                  .then((user) => {
-                    console.log(user);
+                  .then(() => {
                     actions.setSubmitting(false);
                     navigate("/", { replace: true });
                     toast({
