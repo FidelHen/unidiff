@@ -10,9 +10,11 @@ import Error404 from "./views/error/404";
 import AppLayout from "./layout/app-layout";
 import AuthLayout from "./layout/auth-layout";
 import { getAuth } from "firebase/auth";
+import WriteUniReview from "./views/main/write-uni-review";
 
 function App() {
   const auth = getAuth();
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -33,6 +35,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/add-tuition" element={<AddTuition />} />
         <Route path="/universities/view/:uni_id" element={<ViewUniversity />} />
+        <Route
+          path="/universities/view/:uni_id/write-review"
+          element={<WriteUniReview />}
+        />
       </Route>
       <Route element={<AuthLayout />}>
         <Route

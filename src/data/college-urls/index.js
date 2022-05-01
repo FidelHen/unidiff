@@ -6439,25 +6439,25 @@ const collegeUrls = [
     state: "NC",
   },
   {
-    college_name: "University of North Carolina Asheville",
+    college_name: "University of North Carolina at Asheville",
     url: "http://unca.edu",
     city: "Asheville",
     state: "NC",
   },
   {
-    college_name: "University of North Carolina Charlotte",
+    college_name: "University of North Carolina at Charlotte",
     url: "http://uncc.edu",
     city: "Charlotte",
     state: "NC",
   },
   {
-    college_name: "University of North Carolina Greensboro",
+    college_name: "University of North Carolina at Greensboro",
     url: "http://uncg.edu",
     city: "Greensboro",
     state: "NC",
   },
   {
-    college_name: "University of North Carolina Pembroke",
+    college_name: "University of North Carolina at Pembroke",
     url: "http://uncp.edu",
     city: "Pembroke",
     state: "NC",
@@ -6469,7 +6469,7 @@ const collegeUrls = [
     state: "NC",
   },
   {
-    college_name: "University of North Carolina Wilmington",
+    college_name: "University of North Carolina at Wilmington",
     url: "http://uncw.edu",
     city: "Wilmington",
     state: "NC",

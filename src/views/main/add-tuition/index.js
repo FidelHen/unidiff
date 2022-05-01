@@ -23,12 +23,14 @@ import {
   AlertDialogFooter,
   Link,
   useToast,
+  FormHelperText,
 } from "@chakra-ui/react";
 import {
   AutoComplete,
   AutoCompleteInput,
   AutoCompleteItem,
   AutoCompleteList,
+  AutoCompleteTag,
 } from "@choc-ui/chakra-autocomplete";
 import {
   doc,
@@ -37,21 +39,55 @@ import {
   writeBatch,
   arrayUnion,
   increment,
+  Timestamp,
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { Field, Form, Formik } from "formik";
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import collegeData from "../../../data/college-data/index";
 import collegeMajors from "../../../data/college-majors/index";
-import { auth, db } from "../../../utils/firebase";
+import { db } from "../../../utils/firebase";
 
 const AddTuition = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef();
+  const auth = getAuth();
   const toast = useToast();
   let navigate = useNavigate();
   const formatSemester = (val) => `$` + val;
   var currentTime = new Date();
+
+  useEffect(() => {
+    auth.onAuthStateChanged((user) => {
+      if (!user) {
+        onOpen();
+      }
+    });
+  }, [auth, onOpen]);
+
+  const paymentHelp = [
+    {
+      value: "Personal Savings",
+      label: "Personal Savings 💰",
+    },
+    {
+      value: "Family",
+      label: "Family 👪",
+    },
+    {
+      value: "Loans",
+      label: "Loans 🏦",
+    },
+    {
+      value: "Fafsa",
+      label: "Fafsa 🤲",
+    },
+    {
+      value: "Scholarships",
+      label: "Scholarships ✉️",
+    },
+  ];
 
   return (
     <Flex minH={"80vh"} align={"center"} justify={"center"}>
@@ -70,65 +106,132 @@ const AddTuition = () => {
               university: "",
               major: "",
               cost_per_semester: "",
+              paid_per_semester: "",
+              help_pay_with: [],
               household_income: "",
               year: 0,
-              high_school_gpa: "",
+              semester: "",
+              school_gpa: "",
               in_state: "",
               on_campus: "",
             }}
             onSubmit={async (values, actions) => {
-              if (auth.currentUser) {
-                const userUid = auth.currentUser.uid;
+              if (values.cost_per_semester > values.paid_per_semester) {
+                if (auth.currentUser) {
+                  const dateTimestamp = new Date(
+                    Timestamp.now().seconds * 1000
+                  );
 
-                const batch = writeBatch(db);
-                const tuitionDocRef = doc(collection(db, "tuition"));
-                const userDocRef = doc(db, "users", userUid);
+                  const userUid = auth.currentUser.uid;
+                  const schoolId = values.university
+                    .toLowerCase()
+                    .split(" ")
+                    .join("_");
 
-                batch.set(tuitionDocRef, {
-                  created: serverTimestamp(),
-                  created_by: userUid,
-                  ...values,
-                });
+                  const batch = writeBatch(db);
+                  const tuitionDocRef = doc(collection(db, "tuition"));
+                  const schoolDocRef = doc(db, "schools", schoolId);
+                  const schoolMonthlyTuitionDocRef = doc(
+                    db,
+                    "schools",
+                    schoolId,
+                    "monthly_tuition",
+                    `${dateTimestamp.getMonth()}, ${dateTimestamp.getFullYear()}`
+                  );
+                  const userDocRef = doc(db, "users", userUid);
 
-                batch.set(
-                  userDocRef,
-                  {
-                    last_tuition_submission: serverTimestamp(),
-                    tuition_submissions: arrayUnion(tuitionDocRef.id),
-                    submission_count: increment(1),
-                  },
-                  { merge: true }
-                );
+                  const tuitionData = {
+                    created_by: userUid,
+                    ...values,
+                  };
 
-                await batch
-                  .commit()
-                  .then(() => {
-                    actions.setSubmitting(false);
-                    navigate("/", { replace: true });
-                    toast({
-                      title: "Submitted tuition",
-                      description:
-                        "You have successfully submitted your tuition",
-                      status: "success",
-                      duration: 5000,
-                      isClosable: true,
-                      position: "top-right",
-                    });
-                  })
-                  .catch(() => {
-                    actions.setSubmitting(false);
-                    toast({
-                      title: "Error",
-                      description: "Something went wrong, please try again",
-                      status: "error",
-                      duration: 5000,
-                      isClosable: true,
-                      position: "top-right",
-                    });
+                  batch.set(tuitionDocRef, {
+                    created: serverTimestamp(),
+                    created_by: userUid,
+                    created_unix: dateTimestamp.valueOf(),
+                    uni_id: schoolId,
+                    ...tuitionData,
                   });
+
+                  batch.set(
+                    schoolDocRef,
+                    {
+                      uni_name: values.university,
+                      uni_id: schoolId,
+                      last_tuition_submission: serverTimestamp(),
+                      tuition_submissions: arrayUnion(tuitionDocRef.id),
+                      tuition_submission_count: increment(1),
+                    },
+                    { merge: true }
+                  );
+
+                  batch.set(
+                    schoolMonthlyTuitionDocRef,
+                    {
+                      last_tuition_submission: serverTimestamp(),
+                      tuition_submissions: arrayUnion({
+                        created: Timestamp.now(),
+                        ...tuitionData,
+                      }),
+                      tuition_submission_count: increment(1),
+                      year: dateTimestamp.getFullYear().toString(),
+                      month: dateTimestamp.getMonth().toString(),
+                    },
+                    { merge: true }
+                  );
+
+                  batch.set(
+                    userDocRef,
+                    {
+                      last_tuition_submission: serverTimestamp(),
+                      tuition_submissions: arrayUnion(tuitionDocRef.id),
+                      tuition_submission_count: increment(1),
+                    },
+                    { merge: true }
+                  );
+
+                  await batch
+                    .commit()
+                    .then(() => {
+                      actions.setSubmitting(false);
+                      navigate("/", { replace: true });
+                      toast({
+                        title: "Submitted tuition",
+                        description:
+                          "You have successfully submitted your tuition",
+                        status: "success",
+                        duration: 5000,
+                        isClosable: true,
+                        position: "top-right",
+                      });
+                    })
+                    .catch(() => {
+                      actions.setSubmitting(false);
+                      toast({
+                        title: "Error",
+                        description: "Something went wrong, please try again",
+                        status: "error",
+                        duration: 5000,
+                        isClosable: true,
+                        position: "top-right",
+                      });
+                    });
+                } else {
+                  onOpen();
+                }
               } else {
-                onOpen();
+                actions.setSubmitting(false);
+                toast({
+                  title: "Invalid input",
+                  description:
+                    "Tuition per semester cannot be less than paid per semester",
+                  status: "error",
+                  duration: 5000,
+                  isClosable: true,
+                  position: "top-right",
+                });
               }
+
               actions.setSubmitting(false);
             }}
           >
@@ -235,6 +338,76 @@ const AddTuition = () => {
                     )}
                   </Field>
 
+                  <Field name="paid_per_semester">
+                    {() => (
+                      <FormControl id="paid_per_semester" isRequired>
+                        <FormLabel htmlFor="paid_per_semester">
+                          Paid per semester
+                        </FormLabel>
+                        <NumberInput
+                          name="paid_per_semester"
+                          onChange={(value) =>
+                            props.setFieldValue(
+                              "paid_per_semester",
+                              parseFloat(value)
+                            )
+                          }
+                          value={formatSemester(props.values.paid_per_semester)}
+                          min={0}
+                        >
+                          <NumberInputField bg={"gray.50"} border={0} />
+                        </NumberInput>
+                        <FormHelperText>
+                          After Fafsa and Scholarships
+                        </FormHelperText>
+                      </FormControl>
+                    )}
+                  </Field>
+
+                  <Field name="help_pay_with">
+                    {() => (
+                      <FormControl isRequired>
+                        <FormLabel htmlFor="help_pay_with">
+                          Helped pay with
+                        </FormLabel>
+                        <AutoComplete
+                          openOnFocus
+                          multiple
+                          onChange={(value) => {
+                            props.setFieldValue("help_pay_with", value);
+                          }}
+                        >
+                          <AutoCompleteInput
+                            bg={"gray.50"}
+                            border={0}
+                            autoComplete="off"
+                          >
+                            {({ tags }) =>
+                              tags.map((tag, tid) => (
+                                <AutoCompleteTag
+                                  key={tid}
+                                  label={tag.label}
+                                  onRemove={tag.onRemove}
+                                />
+                              ))
+                            }
+                          </AutoCompleteInput>
+                          <AutoCompleteList>
+                            {paymentHelp.map((method, cid) => (
+                              <AutoCompleteItem
+                                key={`option-${cid}`}
+                                value={method.value}
+                                textTransform="capitalize"
+                              >
+                                {method.label}
+                              </AutoCompleteItem>
+                            ))}
+                          </AutoCompleteList>
+                        </AutoComplete>
+                      </FormControl>
+                    )}
+                  </Field>
+
                   <Field name="household_income">
                     {() => (
                       <FormControl id="household_income" isRequired>
@@ -269,57 +442,70 @@ const AddTuition = () => {
                   </Field>
 
                   <HStack>
-                    <Box>
-                      <Field name="year">
-                        {() => (
-                          <FormControl id="year" isRequired>
-                            <FormLabel htmlFor="year">Year</FormLabel>
-                            <NumberInput
-                              max={currentTime.getFullYear()}
-                              min={1950}
-                              allowMouseWheel
-                              name="year"
-                              onChange={(value) =>
-                                props.setFieldValue("year", parseInt(value))
-                              }
-                            >
-                              <NumberInputField bg={"gray.50"} border={0} />
-                            </NumberInput>
-                          </FormControl>
-                        )}
-                      </Field>
-                    </Box>
-                    <Box>
-                      <Field name="high_school_gpa">
-                        {() => (
-                          <FormControl id="high_school_gpa">
-                            <FormLabel htmlFor="high_school_gpa">
-                              High school GPA
-                            </FormLabel>
-                            <NumberInput
-                              max={6}
-                              step={0.01}
-                              min={0}
-                              allowMouseWheel
-                              name="high_school_gpa"
-                              onChange={(value) =>
-                                props.setFieldValue(
-                                  "high_school_gpa",
-                                  parseFloat(value)
-                                )
-                              }
-                            >
-                              <NumberInputField bg={"gray.50"} border={0} />
-                              <NumberInputStepper>
-                                <NumberIncrementStepper />
-                                <NumberDecrementStepper />
-                              </NumberInputStepper>
-                            </NumberInput>
-                          </FormControl>
-                        )}
-                      </Field>
-                    </Box>
+                    <Field name="year">
+                      {() => (
+                        <FormControl id="year" isRequired>
+                          <FormLabel htmlFor="year">Year</FormLabel>
+                          <NumberInput
+                            max={currentTime.getFullYear()}
+                            min={2000}
+                            allowMouseWheel
+                            name="year"
+                            onChange={(value) =>
+                              props.setFieldValue("year", parseInt(value))
+                            }
+                          >
+                            <NumberInputField bg={"gray.50"} border={0} />
+                          </NumberInput>
+                        </FormControl>
+                      )}
+                    </Field>
+                    <Field name="semester">
+                      {() => (
+                        <FormControl id="semester" isRequired>
+                          <FormLabel htmlFor="semester">Semester</FormLabel>
+                          <Select
+                            placeholder="Select option"
+                            bg={"gray.50"}
+                            border={0}
+                            onChange={(e) =>
+                              props.setFieldValue("semester", e.target.value)
+                            }
+                            name="semester"
+                          >
+                            <option value={"fall"}>Fall</option>
+                            <option value={"spring"}>Spring</option>
+                            <option value={"summer"}>Summer</option>
+                          </Select>
+                        </FormControl>
+                      )}
+                    </Field>
                   </HStack>
+                  <Field name="school_gpa">
+                    {() => (
+                      <FormControl id="school_gpa" isRequired>
+                        <FormLabel htmlFor="school_gpa">
+                          High school or College GPA
+                        </FormLabel>
+                        <NumberInput
+                          max={6}
+                          step={0.01}
+                          min={0}
+                          allowMouseWheel
+                          name="school_gpa"
+                          onChange={(value) =>
+                            props.setFieldValue("school_gpa", parseFloat(value))
+                          }
+                        >
+                          <NumberInputField bg={"gray.50"} border={0} />
+                          <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                          </NumberInputStepper>
+                        </NumberInput>
+                      </FormControl>
+                    )}
+                  </Field>
                   <HStack>
                     <Field name="in_state">
                       {() => (
@@ -377,10 +563,11 @@ const AddTuition = () => {
                       _hover={{
                         bg: "green.500",
                       }}
+                      disabled={!auth.currentUser}
                       type="submit"
                       isLoading={props.isSubmitting}
                     >
-                      Submit
+                      {!auth.currentUser ? "Login to submit" : "Submit"}
                     </Button>
                   </Stack>
                 </Stack>

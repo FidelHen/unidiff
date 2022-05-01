@@ -36,14 +36,7 @@ const AppLayout = ({ isAuthenticated }) => {
 
   return (
     <Box>
-      <Box
-        maxW="100%"
-        borderBottom={1}
-        borderStyle={"solid"}
-        borderColor={useColorModeValue("gray.100", "gray.900")}
-        display={"flex"}
-        justifyContent={"center"}
-      >
+      <Box maxW="100%" display={"flex"} justifyContent={"center"}>
         <Box maxW="6xl" flexGrow={1} pt={1} pb={1}>
           <Flex
             bg={useColorModeValue("white", "gray.800")}
